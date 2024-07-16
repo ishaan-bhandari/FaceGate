@@ -1,3 +1,6 @@
+// Load environment variables
+require('dotenv').config();
+
 // Import required modules
 const express = require('express');
 const AWS = require('aws-sdk');
@@ -13,12 +16,12 @@ app.use(bodyParser.json());
 
 // AWS Rekognition setup
 const rekognition = new AWS.Rekognition({
-    region: 'us-west-2' // change to your preferred region
+    region: process.env.AWS_REGION
 });
 
 // MongoDB setup
-const mongoUrl = 'mongodb://localhost:27017';
-const dbName = 'FaceGate';
+const mongoUrl = process.env.MONGO_URL;
+const dbName = process.env.DB_NAME;
 let db;
 
 MongoClient.connect(mongoUrl, { useUnifiedTopology: true }, (err, client) => {
