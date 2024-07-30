@@ -1,25 +1,19 @@
-// Load environment variables
 require('dotenv').config();
-
-// Import required modules
 const express = require('express');
 const AWS = require('aws-sdk');
 const multer = require('multer');
 const bodyParser = require('body-parser');
 const { MongoClient } = require('mongodb');
 
-// Initialize Express app and set the port
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
-// AWS Rekognition setup
 const rekognition = new AWS.Rekognition({
     region: process.env.AWS_REGION
 });
 
-// MongoDB setup
 const mongoUrl = process.env.MONGO_URL;
 const dbName = process.env.DB_NAME;
 let db;
@@ -36,7 +30,6 @@ MongoClient.connect(mongoUrl, { useUnifiedTopology: true }, (err, client) => {
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-// Endpoint to add known faces
 app.post('/addKnownFace', upload.single('image'), (req, res) => {
     const memberId = req.body.memberId;
     const params = {
@@ -46,7 +39,6 @@ app.post('/addKnownFace', upload.single('image'), (req, res) => {
         Attributes: ['ALL']
     };
 
-    // Detect faces in the image
     rekognition.detectFaces(params, (err, data) => {
         if (err) {
             console.error('Error detecting faces:', err);
@@ -72,7 +64,6 @@ app.post('/addKnownFace', upload.single('image'), (req, res) => {
     });
 });
 
-// Modified upload endpoint
 app.post('/upload', upload.single('image'), (req, res) => {
     const params = {
         Image: {
@@ -81,7 +72,6 @@ app.post('/upload', upload.single('image'), (req, res) => {
         Attributes: ['ALL']
     };
 
-    // Detect faces in the uploaded image
     rekognition.detectFaces(params, (err, data) => {
         if (err) {
             console.error('Error detecting faces:', err);
@@ -94,7 +84,6 @@ app.post('/upload', upload.single('image'), (req, res) => {
                     console.error('Error retrieving known faces from MongoDB:', err);
                     res.status(500).send(err);
                 } else {
-                    // Compare detected faces with known faces
                     let matches = [];
                     faceDetails.forEach((detectedFace) => {
                         knownFaces.forEach((knownFace) => {
@@ -122,7 +111,6 @@ app.post('/upload', upload.single('image'), (req, res) => {
                         });
                     });
 
-                    // Save attendance record if there are matches
                     if (matches.length > 0) {
                         const attendanceCollection = db.collection('attendance');
                         const attendanceRecord = {
@@ -147,7 +135,19 @@ app.post('/upload', upload.single('image'), (req, res) => {
     });
 });
 
-// Start Express server
+app.get('/attendance', (req, res) => {
+    const attendanceCollection = db.collection('attendance');
+
+    attendanceCollection.find().toArray((err, records) => {
+        if (err) {
+            console.error('Error retrieving attendance records from MongoDB:', err);
+            res.status(500).send(err);
+        } else {
+            res.status(200).send(records);
+        }
+    });
+});
+
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
