@@ -1,12 +1,13 @@
 const express = require('express');
 const multer = require('multer');
 const rekognition = require('../rekognition');
+const { validateKnownFace } = require('../middleware/validate');
 
 const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-router.post('/', upload.single('image'), (req, res) => {
+router.post('/', validateKnownFace, upload.single('image'), (req, res) => {
     const memberId = req.body.memberId;
     const params = {
         Image: {
